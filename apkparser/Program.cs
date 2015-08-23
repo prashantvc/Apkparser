@@ -2,22 +2,74 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Newtonsoft.Json;
 
 namespace apkparser
 {
     class Program
     {
-
-        static StreamWriter fileWriter;
         static ApkData apk;
-        static Guid guid;
+        static readonly StringBuilder LogBuilder = new StringBuilder();
 
         static void Main(string[] args)
         {
-            string apkPath = args[0];
-            string aaptPath = @"C:\Users\Prashant\AppData\Local\Android\sdk\build-tools\22.0.1\aapt.exe";
+            if (args.Length == 0)
+            {
+                Console.WriteLine("No APK file passed!");
+                return;
+            }
 
+            string apkPath = args[0];
+
+            InitiateBadgingProcess(apkPath);
+            InitiateApktoolProcess(apkPath);
+        }
+
+        static void InitiateApktoolProcess(string apkPath)
+        {
+            const string apktool = @"C:\Users\Prashant\AppData\Local\Android\apktool\apk.bat";
+
+            string path = string.Format(@"c:\uploads\{0}-{1}", apk.Identifier, apk.VersionName);
+            string processArgs = string.Format(" d -b -s -f {0} -o {1}", apkPath, Path.Combine(path, "dump"));
+            var process = new Process
+            {
+                StartInfo =
+                {
+                    FileName = apktool,
+                    Arguments = processArgs,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                }
+            };
+
+            process.Start();
+            process.WaitForExit();
+
+            Console.WriteLine(process.ExitCode);
+
+            LogBuilder.Clear();
+            LogBuilder.AppendLine("## Apktool running!");
+            string output = process.StandardOutput.ReadToEnd();
+            string error = process.StandardError.ReadToEnd();
+            Console.WriteLine(error);
+            LogBuilder.Append(output);
+            LogBuilder.Append(error);
+
+            CleanApktoolProcess(path);
+        }
+
+        static void CleanApktoolProcess(string path)
+        {
+            string logPath = Path.Combine(path, "process.log");
+            File.AppendAllText(logPath, LogBuilder.ToString());
+        }
+
+        static void InitiateBadgingProcess(string apkPath)
+        {
+            const string aaptPath = @"C:\Users\Prashant\AppData\Local\Android\sdk\build-tools\22.0.1\aapt.exe";
             var process = new Process
             {
                 StartInfo =
@@ -31,35 +83,47 @@ namespace apkparser
             };
 
             process.OutputDataReceived += ProcessOnOutputDataReceived;
-            process.ErrorDataReceived += ProcessOnOutputDataReceived;
 
-            guid = Guid.NewGuid();
-
-            string filename = string.Format(@"c:\logs\{0}.txt", guid);
-            fileWriter = new StreamWriter(filename, true);
             apk = new ApkData();
+
+            Console.WriteLine("APK badging started!");
+            StartProcess(process);
+
+
+            process.Close();
+            Console.WriteLine("Process completed");
+            CleanBadgingProcess(process);
+        }
+
+        static void StartProcess(Process process)
+        {
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
             process.WaitForExit();
-
-            Debug.WriteLine(process.ExitCode);
-
-            CleanProcess(process);
         }
 
-        static void CleanProcess(Process process)
+        static void CleanBadgingProcess(Process process)
         {
-
+            Console.WriteLine("Finished badging!");
             var jsonstring = JsonConvert.SerializeObject(apk);
-            File.WriteAllText(@"c:\logs\" + guid + ".json", jsonstring);
 
-            fileWriter.Close();
-            fileWriter.Dispose();
+            var directory = new DirectoryInfo(string.Format(@"c:\uploads\{0}-{1}", apk.Identifier, apk.VersionName));
+            if (!directory.Exists)
+            {
+                directory.Create();
+            }
+
+            string tokenPath = Path.Combine(directory.FullName, "token.json");
+            File.WriteAllText(tokenPath, jsonstring);
+
+            string logsPath = Path.Combine(directory.FullName, "process.log");
+            File.WriteAllText(logsPath, LogBuilder.ToString());
+
 
             process.OutputDataReceived -= ProcessOnOutputDataReceived;
             process.ErrorDataReceived -= ProcessOnOutputDataReceived;
-            process.Dispose();
+            process.Close();
         }
 
 
@@ -72,10 +136,8 @@ namespace apkparser
                 return;
             }
 
-            fileWriter.WriteLine(line);
-
+            LogBuilder.AppendLine(line);
             GetPackageData(line, apk);
-
             GetApplicationData(line);
 
         }
