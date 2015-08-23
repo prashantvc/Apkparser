@@ -10,7 +10,9 @@
 
         public override string ToString()
         {
-            return string.Format("{0} {1}", Identifier, Label);
+
+          //  string json = ;
+            return string.Format("{{\"Identifier\":\"{0}\",\"VersionName\":\"{1}\",\"Label\":\"{2}\",\"Icon\":\"{3}\"}}", Identifier, VersionName, Label, Icon);
         }
     }
 }

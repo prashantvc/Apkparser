@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Newtonsoft.Json;
+
 
 namespace apkparser
 {
@@ -14,13 +14,13 @@ namespace apkparser
 
         static void Main(string[] args)
         {
-            if (args.Length == 0)
+            /*if (args.Length == 0)
             {
                 Console.WriteLine("No APK file passed!");
                 return;
-            }
+            }*/
 
-            string apkPath = args[0];
+            string apkPath = @"C:\Users\Prashant\Downloads\com.dropbox.android-3.0.2.apk";//args[0];
 
             InitiateBadgingProcess(apkPath);
             InitiateApktoolProcess(apkPath);
@@ -106,8 +106,8 @@ namespace apkparser
         static void CleanBadgingProcess(Process process)
         {
             Console.WriteLine("Finished badging!");
-            var jsonstring = JsonConvert.SerializeObject(apk);
-
+            var jsonstring = apk.ToString();
+        
             var directory = new DirectoryInfo(string.Format(@"c:\uploads\{0}-{1}", apk.Identifier, apk.VersionName));
             if (!directory.Exists)
             {
