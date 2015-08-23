@@ -14,13 +14,13 @@ namespace apkparser
 
         static void Main(string[] args)
         {
-            /*if (args.Length == 0)
+            if (args.Length == 0)
             {
                 Console.WriteLine("No APK file passed!");
                 return;
-            }*/
+            }
 
-            string apkPath = @"C:\Users\Prashant\Downloads\com.dropbox.android-3.0.2.apk";//args[0];
+            string apkPath = args[0];
 
             InitiateBadgingProcess(apkPath);
             InitiateApktoolProcess(apkPath);
