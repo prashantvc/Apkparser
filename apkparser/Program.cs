@@ -11,7 +11,7 @@ namespace apkparser
     {
         static ApkData apk;
         static readonly StringBuilder LogBuilder = new StringBuilder();
-        static string _path;
+        static string _savePath;
 
         static void Main(string[] args)
         {
@@ -21,8 +21,8 @@ namespace apkparser
                 return;
             }
 
-            string apkPath = args[0];
-            _path = args[1];
+            string apkPath = string.Format("\"{0}\"", args[0]);
+            _savePath = args[1];
 
             InitiateBadgingProcess(apkPath);
             InitiateApktoolProcess(apkPath);
@@ -32,8 +32,8 @@ namespace apkparser
         {
             const string apktool = @"C:\Users\Prashant\AppData\Local\Android\apktool\apk.bat";
 
-          
-            string processArgs = string.Format(" d -b -s -f {0} -o {1}", apkPath, Path.Combine(_path, "dump"));
+
+            string processArgs = string.Format(" d -b -s -f {0} -o \"{1}\"", apkPath, Path.Combine(_savePath, "dump"));
             var process = new Process
             {
                 StartInfo =
@@ -60,7 +60,7 @@ namespace apkparser
             LogBuilder.Append(output);
             LogBuilder.Append(error);
 
-            CleanApktoolProcess(_path);
+            CleanApktoolProcess(_savePath);
         }
 
         static void CleanApktoolProcess(string path)
@@ -110,7 +110,7 @@ namespace apkparser
             Console.WriteLine("Finished badging!");
             var jsonstring = apk.ToString();
 
-            var directory = new DirectoryInfo(_path);
+            var directory = new DirectoryInfo(_savePath);
             if (!directory.Exists)
             {
                 directory.Create();
